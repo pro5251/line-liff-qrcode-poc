@@ -14,6 +14,8 @@ const env = reactive({
   os: '',
   liffVersion: '',
   lineVersion: '',
+  nativeScanAvailable: false,
+  iosVersion: '',
   initError: ''
 })
 
@@ -57,8 +59,34 @@ async function initLiff() {
     env.os = liff.getOS()
     env.liffVersion = liff.getVersion()
     env.lineVersion = liff.getLineVersion() || ''
+    env.nativeScanAvailable = liff.isApiAvailable('scanCodeV2')
   } catch (err) {
     env.initError = 'LIFF 初始化失敗：' + (err?.message || String(err))
+  }
+}
+
+/** 解析 iOS 版本（供 scanCodeV2 iOS ≥ 14.3 判斷參考）*/
+function detectIosVersion() {
+  const m = navigator.userAgent.match(/OS (\d+)_(\d+)(?:_(\d+))?/i)
+  if (m) env.iosVersion = `${m[1]}.${m[2]}.${m[3] || 0}`
+}
+
+/** LINE 原生 2D code reader（liff.scanCodeV2）*/
+async function scanCodeV2() {
+  status.value = ''
+  if (!env.nativeScanAvailable) {
+    status.value = 'scanCodeV2 在目前環境不可用（見掃描按鈕下方說明）。'
+    return
+  }
+  try {
+    const res = await liff.scanCodeV2()
+    if (res && res.value != null) {
+      handleResult(res.value, 'liff.scanCodeV2')
+    } else {
+      status.value = '使用者取消或未取得結果。'
+    }
+  } catch (err) {
+    status.value = 'scanCodeV2 失敗：' + (err?.message || String(err))
   }
 }
 
@@ -120,7 +148,10 @@ async function login() {
   if (env.liffReady && !env.loggedIn) liff.login()
 }
 
-onMounted(initLiff)
+onMounted(() => {
+  detectIosVersion()
+  initLiff()
+})
 </script>
 
 <template>
@@ -139,6 +170,7 @@ onMounted(initLiff)
         <li>執行環境：<b>{{ env.liffReady ? (env.inClient ? 'LINE App 內 (LIFF)' : '外部瀏覽器') : '瀏覽器' }}</b></li>
         <li>已登入：<b>{{ env.loggedIn ? '是' : '否' }}</b></li>
         <li>OS / LIFF 版本：<b>{{ env.os || '-' }} / {{ env.liffVersion || '-' }}</b></li>
+        <li>scanCodeV2 可用：<b :class="env.nativeScanAvailable ? 'ok' : 'no'">{{ env.nativeScanAvailable ? '是' : '否' }}</b></li>
       </ul>
       <p v-if="env.initError" class="warn">{{ env.initError }}</p>
       <div class="actions">
@@ -161,8 +193,24 @@ onMounted(initLiff)
         <button class="btn" @click="startScan('html5')">html5-qrcode 掃描</button>
         <button class="btn zx" @click="startScan('zxing')">@zxing/browser 掃描</button>
       </div>
+      <div class="actions">
+        <button
+          class="btn liff"
+          :disabled="!env.nativeScanAvailable"
+          @click="scanCodeV2"
+        >
+          liff.scanCodeV2() 掃描
+        </button>
+      </div>
       <p class="hint">
         兩種掃描引擎皆走瀏覽器相機（需 HTTPS 與相機權限），可在一般瀏覽器與 LINE 內建瀏覽器（iOS/Android）使用。
+      </p>
+      <p class="hint">
+        <b>liff.scanCodeV2()</b>：
+        <template v-if="env.nativeScanAvailable">✅ 目前環境可用，可點擊測試。</template>
+        <template v-else-if="!env.liffReady">⚠️ 需先設定 VITE_LIFF_ID 並成功初始化 LIFF。</template>
+        <template v-else>❌ 目前環境不可用（isApiAvailable 回傳 false）。條件：LINE Console 開啟 Scan QR、LIFF Size 設 Full、iOS ≥ 14.3、瀏覽器支援 WebRTC；PC 的 LIFF 瀏覽器不支援。</template>
+        <span v-if="env.iosVersion"> 目前偵測 iOS 版本：{{ env.iosVersion }}。</span>
       </p>
 
       <!-- 內嵌模式 -->
@@ -318,6 +366,10 @@ h2 {
 .btn.zx {
   background: #a855f7;
   color: #fff;
+}
+.btn.liff {
+  background: #06c755;
+  color: #04371a;
 }
 .modal-toggle {
   display: flex;
