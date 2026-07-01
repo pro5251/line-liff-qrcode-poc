@@ -159,6 +159,44 @@ function handleResult(value, source) {
     source,
     time: new Date().toLocaleTimeString()
   })
+  logToGist(value, source)
+}
+
+async function logToGist(value, source) {
+  const token = import.meta.env.VITE_GITHUB_GIST_TOKEN
+  const gistId = import.meta.env.VITE_GITHUB_GIST_ID
+  if (!token || !gistId) return
+
+  const filename = 'scan-log.txt'
+  const entry = [
+    `time:    ${new Date().toISOString()}`,
+    `result:  ${value}`,
+    `source:  ${source}`,
+    `browser: ${env.browserName} ${env.browserVersion}`,
+    `os:      ${env.os}`,
+    `liff:    ${env.liffVersion || 'n/a'}`,
+    `ua:      ${env.userAgent}`,
+    '---'
+  ].join('\n')
+
+  try {
+    const headers = {
+      Authorization: `token ${token}`,
+      'Content-Type': 'application/json'
+    }
+    const getRes = await fetch(`https://api.github.com/gists/${gistId}`, { headers })
+    const gist = await getRes.json()
+    const current = gist.files?.[filename]?.content || ''
+    const updated = current ? `${entry}\n\n${current}` : entry
+
+    await fetch(`https://api.github.com/gists/${gistId}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ files: { [filename]: { content: updated } } })
+    })
+  } catch (_) {
+    // silent — don't block user on logging failure
+  }
 }
 
 async function copyResult() {

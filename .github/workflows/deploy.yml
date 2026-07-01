@@ -28,6 +28,9 @@ jobs:
         env:
           # 在 GitHub repo > Settings > Secrets and variables > Actions > Variables 設定 VITE_LIFF_ID
           VITE_LIFF_ID: ${{ vars.VITE_LIFF_ID }}
+          # 在 GitHub repo > Settings > Secrets and variables > Actions > Secrets 設定
+          VITE_GITHUB_GIST_TOKEN: ${{ secrets.VITE_GITHUB_GIST_TOKEN }}
+          VITE_GITHUB_GIST_ID: ${{ secrets.VITE_GITHUB_GIST_ID }}
         run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
