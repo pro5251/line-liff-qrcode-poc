@@ -16,7 +16,10 @@ const env = reactive({
   lineVersion: '',
   nativeScanAvailable: false,
   iosVersion: '',
-  initError: ''
+  initError: '',
+  browserName: '',
+  browserVersion: '',
+  userAgent: ''
 })
 
 const scannerVisible = ref(false)
@@ -69,6 +72,33 @@ async function initLiff() {
 function detectIosVersion() {
   const m = navigator.userAgent.match(/OS (\d+)_(\d+)(?:_(\d+))?/i)
   if (m) env.iosVersion = `${m[1]}.${m[2]}.${m[3] || 0}`
+}
+
+/** 解析瀏覽器名稱與版本 */
+function detectBrowser() {
+  const ua = navigator.userAgent
+  env.userAgent = ua
+
+  const rules = [
+    { name: 'LINE',        re: /\bLine\/([\d.]+)/i },
+    { name: 'SamsungBrowser', re: /SamsungBrowser\/([\d.]+)/i },
+    { name: 'Edge',        re: /Edg\/([\d.]+)/i },
+    { name: 'Chrome',      re: /Chrome\/([\d.]+)/i },
+    { name: 'Firefox',     re: /Firefox\/([\d.]+)/i },
+    { name: 'Safari',      re: /Version\/([\d.]+).*Safari/i },
+    { name: 'Opera',       re: /OPR\/([\d.]+)/i },
+  ]
+
+  for (const { name, re } of rules) {
+    const m = ua.match(re)
+    if (m) {
+      env.browserName = name
+      env.browserVersion = m[1]
+      return
+    }
+  }
+  env.browserName = 'Unknown'
+  env.browserVersion = ''
 }
 
 /** LINE 原生 2D code reader（liff.scanCodeV2）*/
@@ -150,6 +180,7 @@ async function login() {
 
 onMounted(() => {
   detectIosVersion()
+  detectBrowser()
   initLiff()
 })
 </script>
@@ -171,6 +202,8 @@ onMounted(() => {
         <li>已登入：<b>{{ env.loggedIn ? '是' : '否' }}</b></li>
         <li>OS / LIFF 版本：<b>{{ env.os || '-' }} / {{ env.liffVersion || '-' }}</b></li>
         <li>scanCodeV2 可用：<b :class="env.nativeScanAvailable ? 'ok' : 'no'">{{ env.nativeScanAvailable ? '是' : '否' }}</b></li>
+        <li>瀏覽器：<b>{{ env.browserName }}{{ env.browserVersion ? ' ' + env.browserVersion : '' }}</b></li>
+        <li class="ua-row">UserAgent：<span class="ua">{{ env.userAgent }}</span></li>
       </ul>
       <p v-if="env.initError" class="warn">{{ env.initError }}</p>
       <div class="actions">
@@ -189,11 +222,9 @@ onMounted(() => {
         <input type="checkbox" v-model="useModal" />
         以彈跳視窗開啟相機（掃描完自動關閉並顯示結果）
       </label>
-      <div class="actions">
+      <div class="actions scan-actions">
         <button class="btn" @click="startScan('html5')">html5-qrcode 掃描</button>
         <button class="btn zx" @click="startScan('zxing')">@zxing/browser 掃描</button>
-      </div>
-      <div class="actions">
         <button
           class="btn liff"
           :disabled="!env.nativeScanAvailable"
@@ -337,6 +368,15 @@ h2 {
 .no {
   color: #f87171 !important;
 }
+.ua-row {
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+.ua {
+  word-break: break-all;
+  color: #64748b;
+}
 .actions {
   display: flex;
   gap: 8px;
@@ -370,6 +410,14 @@ h2 {
 .btn.liff {
   background: #06c755;
   color: #04371a;
+}
+.scan-actions {
+  flex-direction: column;
+  gap: 12px;
+}
+.scan-actions .btn {
+  width: 100%;
+  min-width: unset;
 }
 .modal-toggle {
   display: flex;
