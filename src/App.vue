@@ -19,6 +19,7 @@ const env = reactive({
 
 const scannerVisible = ref(false)
 const scannerEngine = ref('html5')
+const useModal = ref(true)
 const tab = ref('scan')
 const scannerRef = ref(null)
 const result = ref('')
@@ -82,6 +83,17 @@ function onScannerError(msg) {
   scannerVisible.value = false
 }
 
+/** 關閉掃描器（並釋放相機） */
+async function closeScanner() {
+  try {
+    await scannerRef.value?.stop()
+  } catch (_) {
+    // 忽略
+  } finally {
+    scannerVisible.value = false
+  }
+}
+
 function handleResult(value, source) {
   result.value = value
   history.value.unshift({
@@ -141,6 +153,10 @@ onMounted(initLiff)
 
     <section class="card" v-if="tab === 'scan'">
       <h2>掃描</h2>
+      <label class="modal-toggle">
+        <input type="checkbox" v-model="useModal" />
+        以彈跳視窗開啟相機（掃描完自動關閉並顯示結果）
+      </label>
       <div class="actions">
         <button class="btn" @click="startScan('html5')">html5-qrcode 掃描</button>
         <button class="btn zx" @click="startScan('zxing')">@zxing/browser 掃描</button>
@@ -149,21 +165,52 @@ onMounted(initLiff)
         兩種掃描引擎皆走瀏覽器相機（需 HTTPS 與相機權限），可在一般瀏覽器與 LINE 內建瀏覽器（iOS/Android）使用。
       </p>
 
-      <Html5QrScanner
-        v-if="scannerVisible && scannerEngine === 'html5'"
-        ref="scannerRef"
-        @scanned="onScanned"
-        @error="onScannerError"
-        @close="scannerVisible = false"
-      />
-      <ZxingScanner
-        v-if="scannerVisible && scannerEngine === 'zxing'"
-        ref="scannerRef"
-        @scanned="onScanned"
-        @error="onScannerError"
-        @close="scannerVisible = false"
-      />
+      <!-- 內嵌模式 -->
+      <template v-if="scannerVisible && !useModal">
+        <Html5QrScanner
+          v-if="scannerEngine === 'html5'"
+          ref="scannerRef"
+          @scanned="onScanned"
+          @error="onScannerError"
+          @close="closeScanner"
+        />
+        <ZxingScanner
+          v-else
+          ref="scannerRef"
+          @scanned="onScanned"
+          @error="onScannerError"
+          @close="closeScanner"
+        />
+      </template>
     </section>
+
+    <!-- 彈跳視窗模式 -->
+    <div
+      v-if="scannerVisible && useModal"
+      class="modal-backdrop"
+      @click.self="closeScanner"
+    >
+      <div class="modal-card">
+        <div class="modal-head">
+          <span>掃描中（{{ scannerEngine === 'zxing' ? '@zxing/browser' : 'html5-qrcode' }}）</span>
+          <button class="modal-x" @click="closeScanner" aria-label="關閉">×</button>
+        </div>
+        <Html5QrScanner
+          v-if="scannerEngine === 'html5'"
+          ref="scannerRef"
+          @scanned="onScanned"
+          @error="onScannerError"
+          @close="closeScanner"
+        />
+        <ZxingScanner
+          v-else
+          ref="scannerRef"
+          @scanned="onScanned"
+          @error="onScannerError"
+          @close="closeScanner"
+        />
+      </div>
+    </div>
 
     <section class="card" v-if="tab === 'scan' && result">
       <h2>最新結果</h2>
@@ -271,6 +318,54 @@ h2 {
 .btn.zx {
   background: #a855f7;
   color: #fff;
+}
+.modal-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #cbd5e1;
+  margin-bottom: 12px;
+}
+.modal-toggle input {
+  width: 18px;
+  height: 18px;
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+}
+.modal-card {
+  width: 100%;
+  max-width: 420px;
+  background: #1e293b;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  color: #93c5fd;
+  font-weight: 700;
+  font-size: 14px;
+}
+.modal-x {
+  border: none;
+  background: transparent;
+  color: #e2e8f0;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
 }
 .btn:disabled {
   opacity: 0.45;
