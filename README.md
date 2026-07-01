@@ -12,7 +12,32 @@
 - 顯示執行環境資訊（是否在 LINE App、OS、LIFF 版本）。
 - 掃描結果顯示、複製、若為網址可直接開啟、掃描歷史（標記掃描引擎）。
 
-> 註：`liff.scanCodeV2()` 原生掃描在 iOS 的 LINE 不支援，故本 POC 掃描一律走瀏覽器相機（html5-qrcode / @zxing/browser），全平台通用。
+> 註：本 POC 掃描一律走瀏覽器相機（html5-qrcode / @zxing/browser），全平台通用、不受 LIFF 環境限制。若要改用 LINE 原生 `liff.scanCodeV2()`，其支援環境與條件見下方章節。
+
+## `liff.scanCodeV2()` 支援環境（官方）
+
+資料來源：LINE 官方文件 [liff.scanCodeV2()](https://developers.line.biz/en/reference/liff/#scan-code-v2)
+
+| OS | 版本 | LIFF 瀏覽器（LINE App 內） | 外部瀏覽器 |
+|----|------|:---:|:---:|
+| iOS | 11 – 14.2 | ❌ | ✅ *¹ |
+| iOS | 14.3 以上 | ✅ *² | ✅ *¹ |
+| Android | 全版本 | ✅ *² | ✅ *¹ |
+| PC | 全版本 | ❌ | ✅ *¹ |
+
+- *¹ 僅支援有 **WebRTC API** 的瀏覽器。
+- *² 僅在 **LIFF 瀏覽器尺寸為 `Full`** 時可用。
+
+**啟用條件（缺一即不可用）**
+
+1. 在 LINE Developers Console 的 LIFF 分頁開啟 **Scan QR**。
+2. LIFF app 的 **Size 設為 `Full`**（LIFF 瀏覽器內使用時）。
+3. iOS 需 **14.3 以上**；PC 的 LIFF 瀏覽器不支援（但外部瀏覽器可）。
+4. 可用 `liff.isApiAvailable('scanCodeV2')` 於執行前判斷。
+
+> 註：`liff.scanCodeV2()` 內部使用 [jsQR](https://github.com/cozmo/jsQR)；舊版 `liff.scanCode()` 在 iOS 與外部瀏覽器皆不支援，已被官方標記為 deprecated。
+> 更正：本專案早期文件曾述「iOS LINE 不支援 scanCodeV2」，依官方表格應為 **iOS 14.3+ 的 LIFF 瀏覽器（Full 尺寸）即支援**；先前無法使用多半是未開啟 Scan QR、尺寸非 Full，或 iOS 版本過舊所致。
+
 
 ## 掃描方式支援對照
 
