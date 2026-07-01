@@ -4,21 +4,25 @@
 
 ## 功能
 
-- **雙掃描引擎並存**
-  - LIFF 環境：優先使用 `liff.scanCodeV2()`（LINE 原生掃描 UI）。
-  - 一般瀏覽器 / 不支援原生掃描時：自動改用 `html5-qrcode`（純前端相機掃描，可切換前後鏡頭）。
-- 顯示執行環境資訊（是否在 LINE App、OS、LIFF 版本、原生掃描是否可用）。
-- 掃描結果顯示、複製、若為網址可直接開啟、掃描歷史紀錄。
+- **兩種掃描引擎，皆走瀏覽器相機**（可在一般瀏覽器與 LINE 內建瀏覽器 iOS/Android 使用）
+  - `html5-qrcode`：高階、內建掃描框與相機切換。
+  - `@zxing/browser`：核心維護活躍、可自訂，供比較與備援。
+- 產生 QR 分頁：自動產生 GUID、生成 QR、頁面顯示 GUID。
+- 顯示執行環境資訊（是否在 LINE App、OS、LIFF 版本）。
+- 掃描結果顯示、複製、若為網址可直接開啟、掃描歷史（標記掃描引擎）。
+
+> 註：`liff.scanCodeV2()` 原生掃描在 iOS 的 LINE 不支援，故本 POC 掃描一律走瀏覽器相機（html5-qrcode / @zxing/browser），全平台通用。
 
 ## 掃描方式支援對照
 
-| 環境 | LIFF 原生掃描 | 瀏覽器相機 (html5-qrcode) |
+| 環境 | html5-qrcode | @zxing/browser |
 |------|:---:|:---:|
 | LINE App 內 (Android LIFF) | ✅ | ✅ |
-| LINE App 內 (iOS LIFF) | ⚠️ 常不支援 | ✅ |
-| 外部瀏覽器 (Chrome/Safari) | ❌ | ✅（需 HTTPS） |
+| LINE App 內 (iOS LIFF) | ✅ | ✅ |
+| 外部瀏覽器 (Chrome/Safari) | ✅ | ✅ |
 
-> 相機掃描需在 **HTTPS** 或 `localhost` 下才能取得相機權限。GitHub Pages 預設就是 HTTPS。
+> 兩者皆需 **HTTPS** 或 `localhost` 才能取得相機權限。GitHub Pages 預設就是 HTTPS。
+> `@zxing/library` 與 `html5-qrcode` 對標準 QR 支援等價；兩者皆不支援 Micro QR。
 
 ## 本機開發
 
@@ -52,3 +56,5 @@ npm run dev
 - Vue 3 + Vite
 - `@line/liff`
 - `html5-qrcode`
+- `@zxing/browser` + `@zxing/library`
+- `qrcode`（產生 QR）

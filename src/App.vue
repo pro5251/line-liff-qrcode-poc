@@ -2,6 +2,7 @@
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import liff from '@line/liff'
 import Html5QrScanner from './components/Html5QrScanner.vue'
+import ZxingScanner from './components/ZxingScanner.vue'
 import QrGenerator from './components/QrGenerator.vue'
 
 const LIFF_ID = import.meta.env.VITE_LIFF_ID || ''
@@ -13,11 +14,11 @@ const env = reactive({
   os: '',
   liffVersion: '',
   lineVersion: '',
-  nativeScanAvailable: false,
   initError: ''
 })
 
 const scannerVisible = ref(false)
+const scannerEngine = ref('html5')
 const tab = ref('scan')
 const scannerRef = ref(null)
 const result = ref('')
@@ -55,37 +56,23 @@ async function initLiff() {
     env.os = liff.getOS()
     env.liffVersion = liff.getVersion()
     env.lineVersion = liff.getLineVersion() || ''
-    env.nativeScanAvailable = liff.isApiAvailable('scanCodeV2')
   } catch (err) {
     env.initError = 'LIFF 初始化失敗：' + (err?.message || String(err))
   }
 }
 
-/** LIFF 原生掃描（僅部分環境支援） */
-async function scanWithLiff() {
+/** 開啟相機掃描；engine: 'html5' | 'zxing' */
+async function startScan(engine) {
   status.value = ''
-  try {
-    const res = await liff.scanCodeV2()
-    if (res && res.value != null) {
-      handleResult(res.value, 'LIFF 原生')
-    } else {
-      status.value = '使用者取消或未取得結果。'
-    }
-  } catch (err) {
-    status.value = 'LIFF 掃描失敗：' + (err?.message || String(err)) + '，可改用瀏覽器相機。'
-  }
-}
-
-/** 瀏覽器相機掃描（html5-qrcode） */
-async function scanWithBrowser() {
-  status.value = ''
+  scannerEngine.value = engine
   scannerVisible.value = true
   await nextTick()
   await scannerRef.value?.start()
 }
 
 function onScanned(text) {
-  handleResult(text, '瀏覽器相機')
+  const source = scannerEngine.value === 'zxing' ? '@zxing/browser' : 'html5-qrcode'
+  handleResult(text, source)
   scannerRef.value?.stop()
   scannerVisible.value = false
 }
@@ -140,7 +127,6 @@ onMounted(initLiff)
         <li>執行環境：<b>{{ env.liffReady ? (env.inClient ? 'LINE App 內 (LIFF)' : '外部瀏覽器') : '瀏覽器' }}</b></li>
         <li>已登入：<b>{{ env.loggedIn ? '是' : '否' }}</b></li>
         <li>OS / LIFF 版本：<b>{{ env.os || '-' }} / {{ env.liffVersion || '-' }}</b></li>
-        <li>原生掃描可用：<b :class="env.nativeScanAvailable ? 'ok' : 'no'">{{ env.nativeScanAvailable ? '是' : '否' }}</b></li>
       </ul>
       <p v-if="env.initError" class="warn">{{ env.initError }}</p>
       <div class="actions">
@@ -156,17 +142,22 @@ onMounted(initLiff)
     <section class="card" v-if="tab === 'scan'">
       <h2>掃描</h2>
       <div class="actions">
-        <button class="btn" :disabled="!env.nativeScanAvailable" @click="scanWithLiff">
-          LIFF 原生掃描
-        </button>
-        <button class="btn" @click="scanWithBrowser">瀏覽器相機掃描</button>
+        <button class="btn" @click="startScan('html5')">html5-qrcode 掃描</button>
+        <button class="btn zx" @click="startScan('zxing')">@zxing/browser 掃描</button>
       </div>
       <p class="hint">
-        原生掃描僅在支援的 LINE App 環境可用；其他情況請用瀏覽器相機（需 HTTPS 與相機權限）。
+        兩種掃描引擎皆走瀏覽器相機（需 HTTPS 與相機權限），可在一般瀏覽器與 LINE 內建瀏覽器（iOS/Android）使用。
       </p>
 
       <Html5QrScanner
-        v-if="scannerVisible"
+        v-if="scannerVisible && scannerEngine === 'html5'"
+        ref="scannerRef"
+        @scanned="onScanned"
+        @error="onScannerError"
+        @close="scannerVisible = false"
+      />
+      <ZxingScanner
+        v-if="scannerVisible && scannerEngine === 'zxing'"
         ref="scannerRef"
         @scanned="onScanned"
         @error="onScannerError"
@@ -275,6 +266,10 @@ h2 {
 }
 .btn.link {
   background: #3b82f6;
+  color: #fff;
+}
+.btn.zx {
+  background: #a855f7;
   color: #fff;
 }
 .btn:disabled {
