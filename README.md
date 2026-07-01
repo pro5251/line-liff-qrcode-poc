@@ -24,6 +24,46 @@
 > 兩者皆需 **HTTPS** 或 `localhost` 才能取得相機權限。GitHub Pages 預設就是 HTTPS。
 > `@zxing/library` 與 `html5-qrcode` 對標準 QR 支援等價；兩者皆不支援 Micro QR。
 
+## 兩種掃描庫支援的瀏覽器 / 手機
+
+圖例：✅ 完整支援（相機即時掃描）｜🟡 部分支援（僅檔案上傳，相機開發中）｜❌ 不支援
+
+### html5-qrcode
+
+資料來源：官方 README [mebjas/html5-qrcode](https://github.com/mebjas/html5-qrcode#supported-platforms)
+
+| 平台 | 瀏覽器 | 支援 |
+|------|--------|:---:|
+| PC / Mac | Firefox / Chrome / Safari / Opera / Edge | ✅ |
+| Android | Chrome / Firefox / Edge / Opera | ✅ |
+| Android | Opera Mini / UC Browser | 🟡 |
+| iOS | Safari | ✅ |
+| iOS | Chrome / Firefox | ✅（iOS ≥ 15.1）※ |
+| iOS | Edge | 🟡 |
+
+> ※ iOS 15.1 以前，第三方瀏覽器共用 WebKit 且無法取得相機權限，故只能檔案上傳。詳見 [issue/14](https://github.com/mebjas/html5-qrcode/issues/14)。
+
+### @zxing/browser
+
+資料來源：官方 repo [zxing-js/browser](https://github.com/zxing-js/browser)（無官方支援矩陣；掃描完全依賴瀏覽器 `MediaDevices.getUserMedia`，故支援度等同該 API）
+
+| 平台 | 瀏覽器 | 支援 |
+|------|--------|:---:|
+| PC / Mac | Chrome / Firefox / Safari / Edge / Opera | ✅ |
+| Android | Chrome / Firefox / Edge / Opera / Samsung Internet | ✅ |
+| iOS | Safari（iOS 11+） | ✅ |
+| iOS | Chrome / Firefox / Edge（iOS 14.3+） | ✅ |
+
+> `getUserMedia` 需在 **HTTPS / localhost** 下才可用；iOS 上第三方瀏覽器同樣受 WebKit 版本限制。
+> 除相機掃描外，`@zxing/browser` 亦支援從 `<img>` / `<video>` / 圖片或影片 URL 解碼。
+
+### 小結
+
+- 兩者在 **主流桌機瀏覽器、Android Chrome、iOS Safari** 皆可即時相機掃描 → 本 POC 目標環境全覆蓋。
+- **iOS 第三方瀏覽器**兩者都受 WebKit 版本限制（html5-qrcode 需 iOS ≥ 15.1、getUserMedia 需 iOS ≥ 14.3）。
+- **LINE 內建瀏覽器（iOS/Android）** 走的是系統 WebView 的 `getUserMedia`，兩者皆可掃描。
+
+
 ## 本機開發
 
 ```bash
