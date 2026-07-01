@@ -1,152 +1,107 @@
-# LINE LIFF QR 掃描 POC
+# LINE LIFF QR Code Scanner POC
 
-用 Vue 3 + Vite 製作的 QR code 掃描 POC，**同時支援 LIFF（LINE App 內）與一般瀏覽器**，可免費部署到 GitHub Pages。
+LINE LIFF 環境的 QR Code 掃描測試工具。比較三種掃描方式在不同瀏覽器/裝置上的相容性，並將每次掃描結果自動記錄至 GitHub Gist。
+
+---
 
 ## 功能
 
-- **兩種掃描引擎，皆走瀏覽器相機**（可在一般瀏覽器與 LINE 內建瀏覽器 iOS/Android 使用）
-  - `html5-qrcode`：高階、內建掃描框與相機切換。
-  - `@zxing/browser`：核心維護活躍、可自訂，供比較與備援。
-- 產生 QR 分頁：自動產生 GUID、生成 QR、頁面顯示 GUID。
-- **可切換掃描開啟方式**：「以彈跳視窗開啟相機」checkbox（**預設打勾**）— 勾選時以 Modal 彈窗開相機，掃到後自動關閉並顯示結果；取消勾選則內嵌於頁面掃描。
-- 顯示執行環境資訊（是否在 LINE App、OS、LIFF 版本）。
-- 掃描結果顯示、複製、若為網址可直接開啟、掃描歷史（標記掃描引擎）。
+| 功能 | 說明 |
+|------|------|
+| **html5-qrcode 掃描** | 使用 `html5-qrcode` 函式庫存取相機 |
+| **@zxing/browser 掃描** | 使用 `@zxing/browser` 函式庫存取相機 |
+| **liff.scanCodeV2** | LINE 原生掃描（僅限 LINE App + iOS ≥ 14.3 或 Android） |
+| **QR 產生器** | 輸入文字或網址，即時產生 QR Code |
+| **Gist 記錄** | 掃描成功時自動將瀏覽器資訊寫入 GitHub Gist |
+| **LIFF Link 複製** | 一鍵複製可分享的 LIFF 連結 |
 
-> 註：本 POC 掃描一律走瀏覽器相機（html5-qrcode / @zxing/browser），全平台通用、不受 LIFF 環境限制。若要改用 LINE 原生 `liff.scanCodeV2()`，其支援環境與條件見下方章節。
-
-## `liff.scanCodeV2()` 支援環境（官方）
-
-資料來源：LINE 官方文件 [liff.scanCodeV2()](https://developers.line.biz/en/reference/liff/#scan-code-v2)
-
-| OS | 版本 | LIFF 瀏覽器（LINE App 內） | 外部瀏覽器 |
-|----|------|:---:|:---:|
-| iOS | 11 – 14.2 | ❌ | ✅ *¹ |
-| iOS | 14.3 以上 | ✅ *² | ✅ *¹ |
-| Android | 全版本 | ✅ *² | ✅ *¹ |
-| PC | 全版本 | ❌ | ✅ *¹ |
-
-- *¹ 僅支援有 **WebRTC API** 的瀏覽器。
-- *² 僅在 **LIFF 瀏覽器尺寸為 `Full`** 時可用。
-
-**啟用條件（缺一即不可用）**
-
-1. 在 LINE Developers Console 的 LIFF 分頁開啟 **Scan QR**。
-2. LIFF app 的 **Size 設為 `Full`**（LIFF 瀏覽器內使用時）。
-3. iOS 需 **14.3 以上**；PC 的 LIFF 瀏覽器不支援（但外部瀏覽器可）。
-4. 可用 `liff.isApiAvailable('scanCodeV2')` 於執行前判斷。
-
-> 註：`liff.scanCodeV2()` 內部使用 [jsQR](https://github.com/cozmo/jsQR)；舊版 `liff.scanCode()` 在 iOS 與外部瀏覽器皆不支援，已被官方標記為 deprecated。
-> 更正：本專案早期文件曾述「iOS LINE 不支援 scanCodeV2」，依官方表格應為 **iOS 14.3+ 的 LIFF 瀏覽器（Full 尺寸）即支援**；先前無法使用多半是未開啟 Scan QR、尺寸非 Full，或 iOS 版本過舊所致。
-
-
-## 掃描方式支援對照
-
-| 環境 | html5-qrcode | @zxing/browser |
-|------|:---:|:---:|
-| LINE App 內 (Android LIFF) | ✅ | ✅ |
-| LINE App 內 (iOS LIFF) | ✅ | ✅ |
-| 外部瀏覽器 (Chrome/Safari) | ✅ | ✅ |
-
-> 兩者皆需 **HTTPS** 或 `localhost` 才能取得相機權限。GitHub Pages 預設就是 HTTPS。
-> `@zxing/library` 與 `html5-qrcode` 對標準 QR 支援等價；兩者皆不支援 Micro QR。
-
-## 測試方式（模擬客戶情境）
-
-1. 開「產生 QR」分頁 → 產生一組 GUID 的 QR（可用另一支手機/螢幕顯示）。
-2. 回「掃描」分頁，確認 **「以彈跳視窗開啟相機」已勾選**（預設打勾）。
-3. 點 **html5-qrcode 掃描** 或 **@zxing/browser 掃描** → 相機以**彈跳視窗（Modal）**開啟。
-4. 對準 QR，掃到後 **視窗自動關閉**，結果顯示在「最新結果」與「掃描紀錄」（標記使用的引擎）。
-5. 驗證掃到的值與步驟 1 產生的 **GUID 相同** → 端到端 POC 成功。
-6. 想比較「內嵌掃描」行為時，取消勾選再掃一次即可。
-
-> Modal 關閉（掃到、按 ×、或點背景）時都會 `stop()` 釋放相機，相機燈會熄滅。
-
-## 兩種掃描庫支援的瀏覽器 / 手機
-
-圖例：✅ 完整支援（相機即時掃描）｜🟡 部分支援（僅檔案上傳，相機開發中）｜❌ 不支援
-
-### html5-qrcode
-
-資料來源：官方 README [mebjas/html5-qrcode](https://github.com/mebjas/html5-qrcode#supported-platforms)
-
-| 平台 | 瀏覽器 | 支援 |
-|------|--------|:---:|
-| PC / Mac | Firefox / Chrome / Safari / Opera / Edge | ✅ |
-| Android | Chrome / Firefox / Edge / Opera | ✅ |
-| Android | Opera Mini / UC Browser | 🟡 |
-| iOS | Safari | ✅ |
-| iOS | Chrome / Firefox | ✅（iOS ≥ 15.1）※ |
-| iOS | Edge | 🟡 |
-
-> ※ iOS 15.1 以前，第三方瀏覽器共用 WebKit 且無法取得相機權限，故只能檔案上傳。詳見 [issue/14](https://github.com/mebjas/html5-qrcode/issues/14)。
-
-### @zxing/browser
-
-資料來源：官方 repo [zxing-js/browser](https://github.com/zxing-js/browser)（無官方支援矩陣；掃描完全依賴瀏覽器 `MediaDevices.getUserMedia`，故支援度等同該 API）
-
-| 平台 | 瀏覽器 | 支援 |
-|------|--------|:---:|
-| PC / Mac | Chrome / Firefox / Safari / Edge / Opera | ✅ |
-| Android | Chrome / Firefox / Edge / Opera / Samsung Internet | ✅ |
-| iOS | Safari（iOS 11+） | ✅ |
-| iOS | Chrome / Firefox / Edge（iOS 14.3+） | ✅ |
-
-> `getUserMedia` 需在 **HTTPS / localhost** 下才可用；iOS 上第三方瀏覽器同樣受 WebKit 版本限制。
-> 除相機掃描外，`@zxing/browser` 亦支援從 `<img>` / `<video>` / 圖片或影片 URL 解碼。
-
-### 小結
-
-- 兩者在 **主流桌機瀏覽器、Android Chrome、iOS Safari** 皆可即時相機掃描 → 本 POC 目標環境全覆蓋。
-- **iOS 第三方瀏覽器**兩者都受 WebKit 版本限制（html5-qrcode 需 iOS ≥ 15.1、getUserMedia 需 iOS ≥ 14.3）。
-- **LINE 內建瀏覽器（iOS/Android）** 走的是系統 WebView 的 `getUserMedia`，兩者皆可掃描。
-
-### 哪款相機問題最少？（結論）
-
-就「**開箱即用、相機問題最少**」而言 → **html5-qrcode 略勝**。
-
-- **html5-qrcode（推薦作為主要引擎）**
-  - 內建處理最容易出包的環節：權限請求、相機列舉、**後鏡頭自動選擇**、手電筒/變焦、掃描框、長寬比、方向。
-  - iOS 相容性已調校；相機不可用時可退回**檔案上傳**。
-  - 社群使用量極大，常見裝置的坑多已修復。
-  - ⚠️ 目前為**維護模式**（作者暫不修 bug、不併 PR）。
-- **@zxing/browser（比較 / 備援）**
-  - 薄封裝，`getUserMedia`、串流釋放、對焦、constraints 需自行處理 → 出錯點較多。
-  - 但**完全可控**且核心維護活躍，踩到特定 bug 時能自行修正。
-
-**建議**：POC / 快速上線用 **html5-qrcode** 為主；若特定 Android 機型對焦不佳或遇到相容問題，再切換 **@zxing/browser** 對照。本專案保留兩顆按鈕即為此目的。
-
+---
 
 ## 本機開發
 
 ```bash
 npm install
-cp .env.example .env   # 填入 VITE_LIFF_ID（沒有也能用瀏覽器相機）
+cp .env.example .env   # 填入環境變數
 npm run dev
 ```
 
-打開 `https://localhost:5173`（相機需 HTTPS 或 localhost）。手機測試可用 `npm run dev -- --host` 加上區網 IP，但區網 IP 非 HTTPS 時相機會被擋，建議直接部署後用手機測。
+---
 
-## 部署到 GitHub Pages
+## 環境變數
 
-1. 建立 GitHub repo，推送本專案。
-2. Repo **Settings → Pages → Build and deployment → Source** 選 **GitHub Actions**。
-3. Repo **Settings → Secrets and variables → Actions → Variables** 新增變數 `VITE_LIFF_ID`（值填你的 LIFF ID；可先留空）。
-4. Push 到 `main` 分支即自動建置部署，網址為 `https://<帳號>.github.io/<repo>/`。
+| 變數 | 必填 | 說明 |
+|------|------|------|
+| `VITE_LIFF_ID` | 否 | LINE Developers Console → LIFF → LIFF ID |
+| `VITE_GITHUB_GIST_TOKEN` | 否 | GitHub PAT，僅需 `gist` scope |
+| `VITE_GITHUB_GIST_ID` | 否 | 目標 Gist 的 ID（URL 最後那串 hash） |
 
-## 設定 LINE LIFF
+不設定 `VITE_LIFF_ID` 也能運作——LIFF 原生功能停用，瀏覽器相機掃描仍可用。  
+不設定 Gist 變數時，掃描紀錄功能靜默停用。
 
-1. 到 [LINE Developers Console](https://developers.line.biz/) 建立 Provider 與 **LINE Login** channel。
-2. 新增 LIFF app：
-   - **Endpoint URL** 填 GitHub Pages 網址（部署完成後的 `https://<帳號>.github.io/<repo>/`）。
-   - **Size** 選 Full。
-   - Scopes 勾 `profile`、`openid`（本 POC 不強制需要）。
-3. 複製 **LIFF ID** 填入 GitHub Actions Variable `VITE_LIFF_ID`，重新觸發部署。
-4. 用 LINE 開啟 `https://liff.line.me/<LIFF_ID>` 測試 LIFF 內行為。
+---
 
-## 技術
+## 部署（GitHub Pages）
 
-- Vue 3 + Vite
-- `@line/liff`
-- `html5-qrcode`
-- `@zxing/browser` + `@zxing/library`
-- `qrcode`（產生 QR）
+推送到 `main` 自動觸發 GitHub Actions。
+
+### GitHub Secrets / Variables 設定
+
+repo → **Settings → Secrets and variables → Actions**：
+
+| 類型 | 名稱 | 值 |
+|------|------|-----|
+| Variable | `VITE_LIFF_ID` | 你的 LIFF ID |
+| Secret | `VITE_GITHUB_GIST_TOKEN` | GitHub PAT（gist scope） |
+| Secret | `VITE_GITHUB_GIST_ID` | 目標 Gist ID |
+
+### 建立 GitHub PAT（Gist 用）
+
+1. GitHub → Settings → Developer settings → Personal access tokens (classic)
+2. Generate new token → 只勾 **`gist`**
+3. 複製 token → 貼入 `VITE_GITHUB_GIST_TOKEN` Secret
+
+### 建立目標 Gist
+
+1. 前往 [gist.github.com](https://gist.github.com)
+2. 新建 Gist（內容隨意，Public / Secret 皆可）
+3. URL 最後那串 hash → 貼入 `VITE_GITHUB_GIST_ID` Secret
+
+---
+
+## Gist 掃描紀錄格式
+
+每次掃描成功，Gist 中的 `scan-log.txt` 最上方新增一筆：
+
+```
+time:    2026-07-01T10:23:45.000Z
+result:  https://example.com
+source:  html5-qrcode
+browser: LINE 14.5
+os:      ios
+liff:    2.22.1
+ua:      Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) ...
+---
+```
+
+---
+
+## 掃描引擎比較
+
+| 引擎 | iOS LINE App | Android LINE App | 一般瀏覽器 |
+|------|:-----------:|:----------------:|:---------:|
+| `liff.scanCodeV2` | ✅（iOS ≥ 14.3） | ✅ | ❌ |
+| `html5-qrcode` | ⚠️（相機權限問題） | ✅ | ✅ |
+| `@zxing/browser` | ⚠️（相機權限問題） | ✅ | ✅ |
+
+`liff.scanCodeV2` 是 LINE App 環境中最穩定的選擇。
+
+---
+
+## 技術棧
+
+- [Vue 3](https://vuejs.org/) + `<script setup>`
+- [Vite](https://vitejs.dev/)
+- [LINE LIFF SDK](https://developers.line.biz/en/docs/liff/)
+- [html5-qrcode](https://github.com/mebjas/html5-qrcode)
+- [@zxing/browser](https://github.com/zxing-js/browser)
+- GitHub Actions + GitHub Pages
