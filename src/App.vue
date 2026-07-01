@@ -1,7 +1,8 @@
 <script setup>
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import liff from '@line/liff'
 import Html5QrScanner from './components/Html5QrScanner.vue'
+import QrGenerator from './components/QrGenerator.vue'
 
 const LIFF_ID = import.meta.env.VITE_LIFF_ID || ''
 
@@ -17,10 +18,28 @@ const env = reactive({
 })
 
 const scannerVisible = ref(false)
+const tab = ref('scan')
 const scannerRef = ref(null)
 const result = ref('')
 const history = ref([])
 const status = ref('')
+
+/** LIFF 連結（可分享，用 LINE 開啟即進入 LIFF）*/
+const liffLink = computed(() => (LIFF_ID ? `https://liff.line.me/${LIFF_ID}` : ''))
+
+/** 複製 LIFF Link */
+async function copyLiffLink() {
+  if (!liffLink.value) {
+    status.value = '尚未設定 VITE_LIFF_ID，無法產生 LIFF Link。'
+    return
+  }
+  try {
+    await navigator.clipboard.writeText(liffLink.value)
+    status.value = '已複製 LIFF Link：' + liffLink.value
+  } catch (_) {
+    status.value = '複製失敗，請手動複製：' + liffLink.value
+  }
+}
 
 /** 初始化 LIFF；失敗不阻擋瀏覽器相機掃描 */
 async function initLiff() {
@@ -109,6 +128,11 @@ onMounted(initLiff)
   <main>
     <h1>LINE LIFF QR 掃描 POC</h1>
 
+    <div class="tabs">
+      <button class="tab" :class="{ active: tab === 'scan' }" @click="tab = 'scan'">掃描</button>
+      <button class="tab" :class="{ active: tab === 'generate' }" @click="tab = 'generate'">產生 QR</button>
+    </div>
+
     <section class="card">
       <h2>環境資訊</h2>
       <ul class="env">
@@ -119,10 +143,17 @@ onMounted(initLiff)
         <li>原生掃描可用：<b :class="env.nativeScanAvailable ? 'ok' : 'no'">{{ env.nativeScanAvailable ? '是' : '否' }}</b></li>
       </ul>
       <p v-if="env.initError" class="warn">{{ env.initError }}</p>
-      <button v-if="env.liffReady && !env.loggedIn" class="btn ghost" @click="login">LINE 登入</button>
+      <div class="actions">
+        <button class="btn" :disabled="!liffLink" @click="copyLiffLink">
+          產生 LIFF Link 並複製
+        </button>
+        <button v-if="env.liffReady && !env.loggedIn" class="btn ghost" @click="login">LINE 登入</button>
+      </div>
+      <p v-if="liffLink" class="hint">LIFF Link：{{ liffLink }}</p>
+      <p v-else class="hint">設定 VITE_LIFF_ID 後才能產生 LIFF Link。</p>
     </section>
 
-    <section class="card">
+    <section class="card" v-if="tab === 'scan'">
       <h2>掃描</h2>
       <div class="actions">
         <button class="btn" :disabled="!env.nativeScanAvailable" @click="scanWithLiff">
@@ -143,7 +174,7 @@ onMounted(initLiff)
       />
     </section>
 
-    <section class="card" v-if="result">
+    <section class="card" v-if="tab === 'scan' && result">
       <h2>最新結果</h2>
       <p class="result">{{ result }}</p>
       <div class="actions">
@@ -152,7 +183,7 @@ onMounted(initLiff)
       </div>
     </section>
 
-    <section class="card" v-if="history.length">
+    <section class="card" v-if="tab === 'scan' && history.length">
       <h2>掃描紀錄</h2>
       <ol class="history">
         <li v-for="(h, i) in history" :key="i">
@@ -163,6 +194,8 @@ onMounted(initLiff)
       </ol>
     </section>
 
+    <QrGenerator v-if="tab === 'generate'" />
+
     <p v-if="status" class="status">{{ status }}</p>
   </main>
 </template>
@@ -171,6 +204,25 @@ onMounted(initLiff)
 h1 {
   font-size: 20px;
   text-align: center;
+}
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.tab {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: #1e293b;
+  color: #94a3b8;
+  font-weight: 700;
+  font-size: 15px;
+}
+.tab.active {
+  background: #3b82f6;
+  color: #fff;
 }
 .card {
   background: #1e293b;

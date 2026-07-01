@@ -12,6 +12,7 @@
   "dependencies": {
     "@line/liff": "^2.24.0",
     "html5-qrcode": "^2.3.8",
+    "qrcode": "^1.5.4",
     "vue": "^3.4.0"
   },
   "devDependencies": {
