@@ -186,16 +186,18 @@ async function logToGist(value, source) {
     }
     const getRes = await fetch(`https://api.github.com/gists/${gistId}`, { headers })
     const gist = await getRes.json()
+    console.log('[gist] GET status', getRes.status, gist.message || 'ok')
     const current = gist.files?.[filename]?.content || ''
     const updated = current ? `${entry}\n\n${current}` : entry
 
-    await fetch(`https://api.github.com/gists/${gistId}`, {
+    const patchRes = await fetch(`https://api.github.com/gists/${gistId}`, {
       method: 'PATCH',
       headers,
       body: JSON.stringify({ files: { [filename]: { content: updated } } })
     })
-  } catch (_) {
-    // silent — don't block user on logging failure
+    console.log('[gist] PATCH status', patchRes.status)
+  } catch (e) {
+    console.error('[gist]', e)
   }
 }
 
