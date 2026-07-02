@@ -80,13 +80,24 @@ function detectBrowser() {
   env.userAgent = ua
 
   const rules = [
-    { name: 'LINE',        re: /\bLine\/([\d.]+)/i },
+    { name: 'LINE',           re: /\bLine\/([\d.]+)/i },
     { name: 'SamsungBrowser', re: /SamsungBrowser\/([\d.]+)/i },
-    { name: 'Edge',        re: /Edg\/([\d.]+)/i },
-    { name: 'Chrome',      re: /Chrome\/([\d.]+)/i },
-    { name: 'Firefox',     re: /Firefox\/([\d.]+)/i },
-    { name: 'Safari',      re: /Version\/([\d.]+).*Safari/i },
-    { name: 'Opera',       re: /OPR\/([\d.]+)/i },
+    { name: 'Edge',           re: /Edg\/([\d.]+)/i },
+    { name: 'Opera',          re: /OPR\/([\d.]+)/i },
+    { name: 'Firefox',        re: /Firefox\/([\d.]+)/i },
+    // LIFF / LINE internal WebView (no Line/ token)
+    { name: 'LIFF-WebView',   re: /LIFF\/([\d.]+)/i },
+    // Instagram / Facebook in-app browser
+    { name: 'Instagram',      re: /Instagram\s+([\d.]+)/i },
+    { name: 'Facebook',       re: /FBAV\/([\d.]+)/i },
+    // Android WebView must come before Chrome
+    { name: 'AndroidWebView', re: /Version\/\d.*Chrome\/([\d.]+).*Mobile Safari/i },
+    // Chrome must come before Safari
+    { name: 'Chrome',         re: /Chrome\/([\d.]+)/i },
+    // Safari: Version/x.x present only in real Safari; WKWebView omits it
+    { name: 'Safari',         re: /Version\/([\d.]+).*Safari/i },
+    // WKWebView (iOS apps embedding web content) — no Version token
+    { name: 'WKWebView',      re: /AppleWebKit\/([\d.]+).*Mobile.*Safari/i },
   ]
 
   for (const { name, re } of rules) {
