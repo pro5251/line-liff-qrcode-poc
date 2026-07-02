@@ -81,15 +81,16 @@ function detectBrowser() {
 
   const rules = [
     { name: 'LINE',           re: /\bLine\/([\d.]+)/i },
+    { name: 'LIFF-WebView',   re: /LIFF\/([\d.]+)/i },
+    { name: 'WeChat',         re: /MicroMessenger\/([\d.]+)/i },
+    { name: 'Instagram',      re: /Instagram\s+([\d.]+)/i },
+    { name: 'Facebook',       re: /FBAV\/([\d.]+)/i },
+    { name: 'Twitter',        re: /Twitter(?:Android|iPhone)\/([\d.]+)/i },
+    { name: 'UCBrowser',      re: /UCBrowser\/([\d.]+)/i },
     { name: 'SamsungBrowser', re: /SamsungBrowser\/([\d.]+)/i },
     { name: 'Edge',           re: /Edg\/([\d.]+)/i },
     { name: 'Opera',          re: /OPR\/([\d.]+)/i },
     { name: 'Firefox',        re: /Firefox\/([\d.]+)/i },
-    // LIFF / LINE internal WebView (no Line/ token)
-    { name: 'LIFF-WebView',   re: /LIFF\/([\d.]+)/i },
-    // Instagram / Facebook in-app browser
-    { name: 'Instagram',      re: /Instagram\s+([\d.]+)/i },
-    { name: 'Facebook',       re: /FBAV\/([\d.]+)/i },
     // Android WebView must come before Chrome
     { name: 'AndroidWebView', re: /Version\/\d.*Chrome\/([\d.]+).*Mobile Safari/i },
     // Chrome must come before Safari
@@ -98,6 +99,8 @@ function detectBrowser() {
     { name: 'Safari',         re: /Version\/([\d.]+).*Safari/i },
     // WKWebView (iOS apps embedding web content) — no Version token
     { name: 'WKWebView',      re: /AppleWebKit\/([\d.]+).*Mobile.*Safari/i },
+    // Brave hides itself — UA identical to Chrome, cannot detect version
+    { name: 'Brave',          re: /Brave\/([\d.]+)/i },
   ]
 
   for (const { name, re } of rules) {
