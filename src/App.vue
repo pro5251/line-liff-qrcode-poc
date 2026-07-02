@@ -201,6 +201,15 @@ async function logToGist(value, source) {
   }
 }
 
+async function testGist() {
+  const token = import.meta.env.VITE_GITHUB_GIST_TOKEN
+  const gistId = import.meta.env.VITE_GITHUB_GIST_ID
+  console.log('[gist-test] token exists:', !!token, '| gistId:', gistId)
+  status.value = `[gist-test] token=${!!token} gistId=${gistId || '(empty)'}`
+  await logToGist('TEST_ENTRY', 'manual-test-button')
+  status.value += ' → logToGist 呼叫完成，看 Console 確認結果'
+}
+
 async function copyResult() {
   try {
     await navigator.clipboard.writeText(result.value)
@@ -251,6 +260,7 @@ onMounted(() => {
           產生 LIFF Link 並複製
         </button>
         <button v-if="env.liffReady && !env.loggedIn" class="btn ghost" @click="login">LINE 登入</button>
+        <button class="btn ghost" @click="testGist">測試 Gist 寫入</button>
       </div>
       <p v-if="liffLink" class="hint">LIFF Link：{{ liffLink }}</p>
       <p v-else class="hint">設定 VITE_LIFF_ID 後才能產生 LIFF Link。</p>
