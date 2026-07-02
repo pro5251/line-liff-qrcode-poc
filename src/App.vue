@@ -93,6 +93,8 @@ function detectBrowser() {
     { name: 'Firefox',        re: /Firefox\/([\d.]+)/i },
     // Android WebView must come before Chrome
     { name: 'AndroidWebView', re: /Version\/\d.*Chrome\/([\d.]+).*Mobile Safari/i },
+    // iOS Chrome uses CriOS token
+    { name: 'Chrome',         re: /CriOS\/([\d.]+)/i },
     // Chrome must come before Safari
     { name: 'Chrome',         re: /Chrome\/([\d.]+)/i },
     // Safari: Version/x.x present only in real Safari; WKWebView omits it
@@ -171,7 +173,7 @@ function handleResult(value, source) {
   history.value.unshift({
     value,
     source,
-    time: new Date().toLocaleTimeString()
+    time: new Date().toLocaleTimeString('zh-TW', { timeZone: 'Asia/Taipei' })
   })
   logToGist(value, source)
 }
@@ -183,7 +185,7 @@ async function logToGist(value, source) {
 
   const filename = 'scan-log.txt'
   const entry = [
-    `time:    ${new Date().toISOString()}`,
+    `time:    ${new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}`,
     `result:  ${value}`,
     `source:  ${source}`,
     `browser: ${env.browserName} ${env.browserVersion}`,
